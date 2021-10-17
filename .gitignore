@@ -6,6 +6,17 @@ __pycache__/
 # C extensions
 *.so
 
+# Meme data
+datainfo.json
+Meme/
+No-meme/
+Sticker/
+
+resnet_features.hdf5
+resnet152_feats.pt
+
+features.hdf5
+
 # Distribution / packaging
 .Python
 build/
