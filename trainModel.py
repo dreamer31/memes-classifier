@@ -3,7 +3,7 @@ import torch, PIL, os
 
 class Train():
     
-    def __init__(self, model, optimizer, criterion, train_loader, test_loader, epochs = 5, device = 'cuda') -> None:
+    def __init__(self, model, optimizer, criterion, train_loader, test_loader, epochs = 5, device = 'cuda', writer = None) -> None:
         
         self.model = model
         self.optimizer = optimizer
@@ -12,6 +12,7 @@ class Train():
         self.test_loader = test_loader
         self.epochs = epochs
         self.device = device
+        self.writer = writer
         self.model.to(self.device)
         
         self.train_losses = []
@@ -69,7 +70,11 @@ class Train():
                                 total += len(labels)
 
                         self.train_losses.append(running_loss/len(self.train_loader))
-                        self.test_losses.append(test_loss/len(self.test_loader))  
+                        self.test_losses.append(test_loss/len(self.test_loader))
+                        
+                        if self.writer is None:
+                            self.writer.add_scalar("Loss/test", running_loss/print_every, steps)  
+                            self.writer.add_scalar("Acc/test", float(accuracy)/float(total), steps) 
                                           
                         print(f"Epoch {epoch+1}/{self.epochs}.. "
                             f"Train loss: {running_loss/print_every:.3f}.. "
@@ -100,3 +105,5 @@ class Train():
               ''')
         
         
+        
+

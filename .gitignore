@@ -12,6 +12,9 @@ Meme/
 No-meme/
 Sticker/
 
+# Experiments
+runs/
+
 resnet_features.hdf5
 resnet152_feats.pt
 

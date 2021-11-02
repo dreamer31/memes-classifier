@@ -77,7 +77,7 @@ class ImageTextData(Dataset):
         return image, text, label
     
     
-def load_split_data(datadir, batch_size = 64, valid_size = .2, imagen_out = True):
+def load_split_data(datadir, batch_size = 64, test_size = .2, imagen_out = True):
     
     train_transforms = transforms.Compose([transforms.Resize((30, 30)), 
                                            transforms.ToTensor(), 
@@ -85,7 +85,7 @@ def load_split_data(datadir, batch_size = 64, valid_size = .2, imagen_out = True
 
     model_dataset = ImageTextData(datadir, transform=train_transforms, imagen_out=imagen_out)
     total_lenght = len(model_dataset)
-    test_lenght = int(total_lenght * .2)   
+    test_lenght = int(total_lenght * test_size)   
     train_lenght = total_lenght - test_lenght
     
     train_data, test_data = torch.utils.data.random_split(model_dataset, [train_lenght, test_lenght])  

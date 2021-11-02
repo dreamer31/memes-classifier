@@ -4,37 +4,6 @@ import torch
     
 from torchvision import models
 from stop_words import get_stop_words
-
-
-class PrincipalClassificator(nn.Module):
-    
-    def __init__(self, vocab_size):
-        super().__init__()
-        self.conv1 = nn.Conv2d(3, 6, 5)
-        self.pool = nn.MaxPool2d(2, 2)
-        self.conv2 = nn.Conv2d(6, 16, 5)
-        self.fc1 = nn.Linear(44944, 120)
-        self.fc2 = nn.Linear(120, 84)
-        
-        self.linear1 = nn.Linear(vocab_size, 84)
-        
-        self.final = nn.Linear(168, 3)
-        
-        
-    def forward(self, image, text):
-        
-        x = self.pool(F.relu(self.conv1(image)))
-        x = self.pool(F.relu(self.conv2(x)))
-        x = torch.flatten(x, 1) # flatten all dimensions except batch
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        
-        out = self.linear1(text)
-        out = out.squeeze(1)
-        
-        uwu = torch.cat([x, out], dim = 1)
-        return self.final(uwu)
-    
     
 class CNN(nn.Module): 
 
@@ -82,8 +51,6 @@ class ImageClassificator(nn.Module):
 def get_restnet152(gradient = True):
     
     model = models.resnet152(pretrained = True)
-    weights = torch.load('resnet152_feats.pt', map_location=lambda storage, loc: storage.cuda(0))
-    model.base_width = weights
     for param in model.parameters():
         param.requires_grad = gradient
     
@@ -165,13 +132,13 @@ class SpatialDropout(nn.Dropout2d):
 
 class LSTMTagger(nn.Module):
 
-    def __init__(self, embedding_dim, vocab_size, tagset_size):
+    def __init__(self, embedding_dim, vocab_size, tagset_size, vocab, lstm_units = 128):
         super(LSTMTagger, self).__init__()
-        LSTM_UNTITS = 128
+        LSTM_UNTITS = lstm_units
         DENSE_HIDDEN_UNITS = 4 * LSTM_UNTITS
         
 
-        self.embedding = nn.Embedding(vocab_size, embedding_dim, padding_idx=1)
+        self.embedding = nn.Embedding(vocab_size, embedding_dim, padding_idx = vocab["<pad>"])
         self.embedding_dropout = SpatialDropout(0.3)
 
         # The LSTM takes word embeddings as inputs, and outputs hidden states
@@ -215,6 +182,29 @@ class LSTMTagger(nn.Module):
         #out = torch.cat([result, aux_result], 1)
         
         return aux_result
+    
+class TextSentimentConv1d(nn.Module):
+    def __init__(self, vocab_size, embed_dim, num_class, vocab):
+        super().__init__()
+        self.embedding = nn.Embedding(
+            vocab_size,
+            embed_dim,
+            padding_idx=vocab["<pad>"]
+        )
+        self.conv = nn.Conv1d(
+            in_channels=1,
+            out_channels=256,
+            kernel_size=3*embed_dim,
+            stride=embed_dim
+        )
+    
+    def forward(self, text):
+        # embedded -> B, N, E
+        embedded = self.embedding(text)
+        embedded = embedded.view(embedded.shape[0], 1, -1)
+        z = F.relu(self.conv(embedded))
+        return z.max(dim=-1).values
+    
     
 class ModelMix(nn.Module):
     
