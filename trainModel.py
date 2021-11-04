@@ -1,9 +1,17 @@
 import torch, PIL, os
+import pandas as pd
+import seaborn as sn
+import matplotlib.pyplot as plt
+import numpy as np
 
+from sklearn.metrics import confusion_matrix
+
+classes = ('Meme', 'No Meme', 'Sticker')
 
 class Train():
     
-    def __init__(self, model, optimizer, criterion, train_loader, test_loader, epochs = 5, device = 'cuda', writer = None) -> None:
+    def __init__(self, model, optimizer, criterion, train_loader, test_loader,
+                 epochs = 5, device = 'cuda', writer = None, confusion_matrix = False) -> None:
         
         self.model = model
         self.optimizer = optimizer
@@ -14,9 +22,13 @@ class Train():
         self.device = device
         self.writer = writer
         self.model.to(self.device)
+        self.confusion_matrix = confusion_matrix
         
         self.train_losses = []
         self.test_losses = []
+        
+        self.y_true = []
+        self.y_predicted = []
         
     def get_model(self):
         return self.model
@@ -67,6 +79,10 @@ class Train():
                                                             
                                 val, ind = predict.squeeze(1).max(1) 
                                 accuracy += (ind == labels).sum()
+                                
+                                self.y_true.extend(labels.cpu().numpy())
+                                self.y_predicted.extend(ind.cpu().numpy())
+                                
                                 total += len(labels)
 
                         self.train_losses.append(running_loss/len(self.train_loader))
@@ -75,6 +91,14 @@ class Train():
                         if self.writer is None:
                             self.writer.add_scalar("Loss/test", running_loss/print_every, steps)  
                             self.writer.add_scalar("Acc/test", float(accuracy)/float(total), steps) 
+                            
+                        if self.confusion_matrix:
+                            cf_matrix = confusion_matrix(self.y_true, self.y_predicted)
+                            df_cm = pd.DataFrame(cf_matrix/np.sum(cf_matrix) * 3, index = [i for i in classes],
+                                                columns = [i for i in classes])
+                            plt.figure(figsize = (12,7))
+                            sn.heatmap(df_cm, annot=True)
+                            plt.show()
                                           
                         print(f"Epoch {epoch+1}/{self.epochs}.. "
                             f"Train loss: {running_loss/print_every:.3f}.. "
