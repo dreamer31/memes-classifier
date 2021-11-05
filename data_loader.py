@@ -9,7 +9,7 @@ from BalancedClass import make_weights_for_balanced_classes
 import os
 import torch
 
-
+torch.manual_seed(42)
 class ImageTextData(Dataset):
     
     def __init__(self, df, transform = False, only_meme = False, imagen_out = True):
@@ -66,6 +66,7 @@ class ImageTextData(Dataset):
     
     def __getitem__(self, index):
         
+        return self.image_path[index]
         image = self.image_path[index]
         label = self.targets[index]
         text = self.text_padding[index]

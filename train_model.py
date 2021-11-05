@@ -3,15 +3,15 @@ import pandas as pd
 import seaborn as sn
 import matplotlib.pyplot as plt
 import numpy as np
+import hiddenlayer as hl
+import sys
 
-from sklearn.metrics import confusion_matrix
-
-classes = ('Meme', 'No Meme', 'Sticker')
+from utils import confusion_matrix_plot
 
 class Train():
     
     def __init__(self, model, optimizer, criterion, train_loader, test_loader,
-                 epochs = 5, device = 'cuda', writer = None, confusion_matrix = False) -> None:
+                 epochs = 5, device = 'cuda', writer = None, show_matrix = False) -> None:
         
         self.model = model
         self.optimizer = optimizer
@@ -22,13 +22,15 @@ class Train():
         self.device = device
         self.writer = writer
         self.model.to(self.device)
-        self.confusion_matrix = confusion_matrix
+        self.show_matrix = show_matrix
         
         self.train_losses = []
         self.test_losses = []
         
         self.y_true = []
         self.y_predicted = []
+        
+        self.classes = ('Meme', 'No Meme', 'Sticker')
         
     def get_model(self):
         return self.model
@@ -42,7 +44,7 @@ class Train():
         steps = 0
         running_loss = 0
         print_every = 10
-            
+                
         for epoch in range(self.epochs):
             try :
                 for image, text, labels in self.train_loader:
@@ -88,19 +90,14 @@ class Train():
                         self.train_losses.append(running_loss/len(self.train_loader))
                         self.test_losses.append(test_loss/len(self.test_loader))
                         
-                        if self.writer is None:
+                        if self.writer is not None:
                             self.writer.add_scalar("Loss/test", running_loss/print_every, steps)  
                             self.writer.add_scalar("Acc/test", float(accuracy)/float(total), steps) 
                             
-                        if self.confusion_matrix:
-                            cf_matrix = confusion_matrix(self.y_true, self.y_predicted)
-                            df_cm = pd.DataFrame(cf_matrix/np.sum(cf_matrix) * 3, index = [i for i in classes],
-                                                columns = [i for i in classes])
-                            plt.figure(figsize = (12,7))
-                            sn.heatmap(df_cm, annot=True)
-                            plt.show()
-                                          
-                        print(f"Epoch {epoch+1}/{self.epochs}.. "
+                        if self.show_matrix:                            
+                            confusion_matrix_plot(self.y_true, self.y_predicted, self.classes)
+                
+                        sys.stdout.write(f"\rEpoch {epoch+1}/{self.epochs}.. "
                             f"Train loss: {running_loss/print_every:.3f}.. "
                             f"Test loss: {test_loss/len(self.test_loader):.3f}.. "
                             f"Test accuracy: {float(accuracy)/float(total):.3f}")
@@ -108,6 +105,10 @@ class Train():
                         running_loss = 0
                         accuracy = 0
                         total =0
+                        
+                        self.y_true = []
+                        self.y_predicted = []
+                        
                         self.model.train()
                         
             except PIL.UnidentifiedImageError as error:
@@ -127,6 +128,13 @@ class Train():
               criterion: {self.criterion}
               epocas: {self.epochs}
               ''')
+        
+    def save_model(self, path):
+        torch.save(self.model.state_dict(), path)
+        
+    def create_graph(self, image, text):
+        hl.build_graph(model=self.model, args=(image.to(self.device),
+                                               text.type(torch.int64).to(self.device)))
         
         
         
