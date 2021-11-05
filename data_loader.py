@@ -66,7 +66,6 @@ class ImageTextData(Dataset):
     
     def __getitem__(self, index):
         
-        return self.image_path[index]
         image = self.image_path[index]
         label = self.targets[index]
         text = self.text_padding[index]
