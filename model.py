@@ -214,6 +214,37 @@ class TextSentimentConv1d(nn.Module):
         return z.max(dim=-1).values
     
     
+    
+class RNN(nn.Module):
+    def __init__(self, vocab_size, embed_dim, hidden_size, vocab):
+        super().__init__()
+        
+        self.embedding = nn.Embedding(
+            vocab_size,
+            embed_dim,
+            padding_idx=vocab["<pad>"]
+        )
+        
+        self.rnn = nn.RNN(
+            input_size=embed_dim,
+            hidden_size=hidden_size,
+            bidirectional=True
+        )
+        
+        self.label = nn.Linear(2*hidden_size, 256)
+        
+        
+    def forward(self, text):
+        
+        embedded = self.embedding(text)
+        output, hidden = self.rnn(embedded)
+        hidden = hidden.view(hidden.size(1), -1)
+        
+        out = self.label(hidden)
+        return out
+        
+    
+    
 class ModelMix(nn.Module):
     
     def __init__(self, model_text, model_image):
