@@ -5,6 +5,7 @@ import torch
 from torchvision import models
 from stop_words import get_stop_words
     
+
 class CNN(nn.Module): 
 
     def __init__(self):
@@ -19,11 +20,12 @@ class CNN(nn.Module):
 
         x = F.relu(F.max_pool2d(self.conv1(x), 2))
         x = F.relu(F.max_pool2d(self.conv2_drop(self.conv2(x)), 2))
-        x = x.view(x.shape[0],-1)
+        x = x.view(x.shape[0], -1)
         x = F.relu(self.fc1(x))
         x = F.dropout(x, training=self.training)
         x = self.fc2(x)
-        return x    
+        return x
+
 
 class ImageClassificator(nn.Module):
     
@@ -35,29 +37,29 @@ class ImageClassificator(nn.Module):
         self.conv2 = nn.Conv2d(6, 16, 5)
         self.fc1 = nn.Linear(44944, 512)
         self.fc2 = nn.Linear(512, 256)
-        self.soft = nn.Softmax(dim = 1)
-        
-        
+        self.soft = nn.Softmax(dim=1)
         
     def forward(self, x):
         
         x = self.pool(F.relu(self.conv1(x)))
         x = self.pool(F.relu(self.conv2(x)))
-        x = torch.flatten(x, 1) # flatten all dimensions except batch
+        x = torch.flatten(x, 1)  # flatten all dimensions except batch
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
         return x
     
-def get_restnet152(gradient = True):
     
-    model = models.resnet152(pretrained = True)
+def get_restnet152(gradient=True):
+    
+    model = models.resnet152(pretrained=True)
     for param in model.parameters():
         param.requires_grad = gradient
     
     model.fc = nn.Sequential(nn.Linear(2048, 256),)
-                                    #nn.LogSoftmax(dim=1))
+                                    #  nn.LogSoftmax(dim=1))
     
     return model
+    
     
 class BoWClassifier(nn.Module):
     
@@ -87,6 +89,7 @@ def make_bow_vector(batch, vocab):
         
     return tuple(ret)
 
+
 def make_target(batch, classes):
     
     ret = []
@@ -94,6 +97,7 @@ def make_target(batch, classes):
         ret.append(torch.LongTensor([classes[label]]))
         
     return tuple(ret)
+
 
 class TextSentimentLinear(nn.Module):
     def __init__(self, vocab_size, embed_dim, num_class, vocab):
@@ -120,7 +124,6 @@ class TextSentimentLinear(nn.Module):
         return self.fc(embedded)
 
 
-
 class SpatialDropout(nn.Dropout2d):
     def forward(self, x):
         x = x.unsqueeze(2)    # (N, T, 1, K)
@@ -130,24 +133,30 @@ class SpatialDropout(nn.Dropout2d):
         x = x.squeeze(2)  # (N, T, K)
         return x
 
+
 class LSTMTagger(nn.Module):
 
-    def __init__(self, embedding_dim, vocab_size, tagset_size, vocab, lstm_units = 128):
+    def __init__(self, embedding_dim, vocab_size, tagset_size, vocab, lstm_units=128):
         super(LSTMTagger, self).__init__()
         LSTM_UNTITS = lstm_units
         DENSE_HIDDEN_UNITS = 4 * LSTM_UNTITS
         
-
-        self.embedding = nn.Embedding(vocab_size, embedding_dim, padding_idx = vocab["<pad>"])
+        self.embedding = nn.Embedding(vocab_size,
+                                      embedding_dim,
+                                      padding_idx=vocab["<pad>"])
         self.embedding_dropout = SpatialDropout(0.3)
 
         # The LSTM takes word embeddings as inputs, and outputs hidden states
         # with dimensionality hidden_dim.
-        self.lstm1 = nn.LSTM(embedding_dim, LSTM_UNTITS,
-                            batch_first = True, bidirectional=True)
+        self.lstm1 = nn.LSTM(embedding_dim,
+                             LSTM_UNTITS,
+                             batch_first=True,
+                             bidirectional=True)
         
-        self.lstm2 = nn.LSTM(LSTM_UNTITS * 2, LSTM_UNTITS,
-                            batch_first = True, bidirectional=True)
+        self.lstm2 = nn.LSTM(LSTM_UNTITS * 2,
+                             LSTM_UNTITS,
+                             batch_first=True,
+                             bidirectional=True)
 
         # The linear layer that maps from hidden state space to tag space
         self.linear1 = nn.Linear(DENSE_HIDDEN_UNITS, DENSE_HIDDEN_UNITS)
@@ -155,9 +164,7 @@ class LSTMTagger(nn.Module):
         
         #self.linear_out = nn.Linear(DENSE_HIDDEN_UNITS, 1)
         self.linear_aux_out = nn.Linear(DENSE_HIDDEN_UNITS, 256)
-        
-        
-
+           
     def forward(self, sentence):
         
         h_embedding = self.embedding(sentence)
@@ -172,8 +179,8 @@ class LSTMTagger(nn.Module):
         max_pool, _ = torch.max(h_lstm2, 1)
         
         h_conc = torch.cat((max_pool, avg_pool), 1)
-        h_conc_linear1  = F.relu(self.linear1(h_conc))
-        h_conc_linear2  = F.relu(self.linear2(h_conc))
+        h_conc_linear1 = F.relu(self.linear1(h_conc))
+        h_conc_linear2 = F.relu(self.linear2(h_conc))
         
         hidden = h_conc + h_conc_linear1 + h_conc_linear2
         
@@ -182,6 +189,7 @@ class LSTMTagger(nn.Module):
         #out = torch.cat([result, aux_result], 1)
         
         return aux_result
+    
     
 class TextSentimentConv1d(nn.Module):
     def __init__(self, vocab_size, embed_dim, num_class, vocab):

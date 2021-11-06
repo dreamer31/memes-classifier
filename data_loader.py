@@ -1,6 +1,4 @@
-from torchtext.vocab import vocab
 from torchvision import transforms
-from torchtext.legacy import data
 from torch.utils.data import Dataset
 from torch.nn.utils.rnn import pad_sequence
 from PIL import Image
@@ -10,9 +8,11 @@ import os
 import torch
 
 torch.manual_seed(42)
+
+
 class ImageTextData(Dataset):
     
-    def __init__(self, df, transform = False, only_meme = False, imagen_out = True):
+    def __init__(self, df, transform=False, only_meme=False, imagen_out=True):
         
         # Dict with the initial info
         self.df = df
@@ -24,7 +24,7 @@ class ImageTextData(Dataset):
         self.vocab = df["vocab"]
         self.vocab["<pad>"] = 1
         
-        self.image_out = imagen_out   
+        self.image_out = imagen_out
                         
         # Data iterator
         self.image_path = []
@@ -46,20 +46,16 @@ class ImageTextData(Dataset):
                         self.targets.append(0) if only_meme else self.targets.append(2)
                     else:
                         self.targets.append(target - 1)
-                        
-                    # phrase = ''
-                    # keys_vocab = list(self.vocab.keys())
-                    # for word in text:
-                    #     phrase += keys_vocab[word] + ' '
-                    
+                            
                     text_tensor = torch.tensor(text)
                     self.text.append(text_tensor)
-                    #self.text.append(phrase)
                     
-                else: 
+                else:
                     pass
                 
-        self.text_padding = pad_sequence(self.text, batch_first=True, padding_value=self.vocab["<pad>"])        
+        self.text_padding = pad_sequence(self.text,
+                                         batch_first=True,
+                                         padding_value=self.vocab["<pad>"])
         
     def __len__(self):
         return len(self.image_path)
@@ -77,27 +73,36 @@ class ImageTextData(Dataset):
         return image, text, label
     
     
-def load_split_data(datadir, batch_size = 64, test_size = .2, imagen_out = True):
+def load_split_data(datadir, batch_size=64, test_size=.2, imagen_out=True):
     
-    train_transforms = transforms.Compose([transforms.Resize((30, 30)), 
-                                           transforms.ToTensor(), 
+    train_transforms = transforms.Compose([transforms.Resize((30, 30)),
+                                           transforms.ToTensor(),
                                            transforms.Normalize((0.485, 0.456, 0.406),(0.229, 0.224, 0.225))])
 
-    model_dataset = ImageTextData(datadir, transform=train_transforms, imagen_out=imagen_out)
+    model_dataset = ImageTextData(datadir,
+                                  transform=train_transforms,
+                                  imagen_out=imagen_out)
     total_lenght = len(model_dataset)
-    test_lenght = int(total_lenght * test_size)   
+    test_lenght = int(total_lenght * test_size)
     train_lenght = total_lenght - test_lenght
     
-    train_data, test_data = torch.utils.data.random_split(model_dataset, [train_lenght, test_lenght])  
+    train_data, test_data = torch.utils.data.random_split(model_dataset,
+                                                          [train_lenght, test_lenght])
 
-    weights_train = make_weights_for_balanced_classes(train_data.dataset.targets, train_data.indices, 3)  
-    weights_train = torch.DoubleTensor(weights_train)      
-    sampler_train = torch.utils.data.sampler.WeightedRandomSampler(weights_train, len(weights_train))   
+    weights_train = make_weights_for_balanced_classes(train_data.dataset.targets,
+                                                      train_data.indices,
+                                                      3)
+    weights_train = torch.DoubleTensor(weights_train)
+    sampler_train = torch.utils.data.sampler.WeightedRandomSampler(weights_train, len(weights_train))
     
-    weights_test = make_weights_for_balanced_classes(train_data.dataset.targets, test_data.indices, 3)    
-    weights_test = torch.DoubleTensor(weights_test)      
-    sampler_test = torch.utils.data.sampler.WeightedRandomSampler(weights_test, len(weights_test))  
+    weights_test = make_weights_for_balanced_classes(train_data.dataset.targets, test_data.indices, 3)
+    weights_test = torch.DoubleTensor(weights_test)
+    sampler_test = torch.utils.data.sampler.WeightedRandomSampler(weights_test, len(weights_test))
     
-    trainloader = torch.utils.data.DataLoader(train_data, sampler=sampler_train, batch_size=batch_size)
-    testloader = torch.utils.data.DataLoader(test_data, sampler=sampler_test, batch_size=batch_size)
+    trainloader = torch.utils.data.DataLoader(train_data,
+                                              sampler=sampler_train,
+                                              batch_size=batch_size)
+    testloader = torch.utils.data.DataLoader(test_data,
+                                             sampler=sampler_test,
+                                             batch_size=batch_size)
     return trainloader, testloader
