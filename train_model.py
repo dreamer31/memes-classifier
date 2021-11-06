@@ -4,12 +4,12 @@ import os
 import hiddenlayer as hl
 import sys
 
-from utils import confusion_matrix_plot
+from utils import confusion_matrix_plot, plot_images
 
 
 class Train():
     def __init__(self, model, optimizer, criterion, train_loader, test_loader,
-                 epochs=5, device='cuda', writer=None, show_matrix=False) -> None:
+                 epochs=5, device='cuda', writer=None, show_matrix=False, show_image=False) -> None:
         self.model = model
         self.optimizer = optimizer
         self.criterion = criterion
@@ -20,12 +20,14 @@ class Train():
         self.writer = writer
         self.model.to(self.device)
         self.show_matrix = show_matrix
+        self.show_image = show_image
 
         self.train_losses = []
         self.test_losses = []
 
         self.y_true = []
         self.y_predicted = []
+        self.images_show = []
 
         self.classes = ('Meme', 'No Meme', 'Sticker')
 
@@ -81,6 +83,7 @@ class Train():
 
                                 self.y_true.extend(labels.cpu().numpy())
                                 self.y_predicted.extend(ind.cpu().numpy())
+                                self.images_show.extend(image.cpu().numpy())
 
                                 total += len(labels)
 
@@ -97,6 +100,9 @@ class Train():
                             confusion_matrix_plot(self.y_true,
                                                   self.y_predicted,
                                                   self.classes)
+                            
+                        if self.show_image:
+                            plot_images(self.images_show, self.y_true, self.y_predicted, self.classes)
                 
                         sys.stdout.write(f"\rEpoch {epoch+1}/{self.epochs}.. "
                             f"Train loss: {running_loss/print_every:.3f}.. "
@@ -109,6 +115,7 @@ class Train():
   
                         self.y_true = []
                         self.y_predicted = []
+                        self.images_show = []
              
                         self.model.train()
           

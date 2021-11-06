@@ -229,8 +229,3 @@ class ModelMix(nn.Module):
         image_process = self.model_image(image)
         out = torch.cat([text_process, image_process], 1)
         return self.lineal1(out)
-        
-
-def get_device():
-    
-    return torch.device("cuda" if torch.cuda.is_available() else "cpu")
