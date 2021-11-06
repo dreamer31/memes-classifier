@@ -2,7 +2,7 @@ from torchvision import transforms
 from torch.utils.data import Dataset
 from torch.nn.utils.rnn import pad_sequence
 from PIL import Image
-from BalancedClass import make_weights_for_balanced_classes
+from utils import make_weights_for_balanced_classes
 
 import os
 import torch
