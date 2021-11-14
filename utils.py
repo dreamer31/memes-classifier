@@ -7,7 +7,18 @@ import torch
 from sklearn.metrics import confusion_matrix
 
 
-def confusion_matrix_plot(y_true, y_predicted, classes):
+def confusion_matrix_plot(y_true, y_predicted, classes) -> None:
+    
+    """
+    Create a confusion matrix and plot it.
+    
+    :param y_true: True labels
+    :param y_predicted: Predicted labels
+    :param classes: List of class names
+    
+    :return: None
+    
+    """
 
     cf_matrix = confusion_matrix(y_true, y_predicted)
     
@@ -20,12 +31,32 @@ def confusion_matrix_plot(y_true, y_predicted, classes):
     plt.show()
 
 
-def get_device():
+def get_device() -> torch.device:
+    
+    """
+    Return the device to use, gpu if is available.
+    
+    :return: torch.device
+    """
     
     return torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-def plot_images(images, labels, predicted, classes, rows=1, columns=5):
+def plot_images(images, labels, predicted, classes, rows=1, columns=5) -> None:
+    
+    """
+    Plot images for a given set of labels and predicted labels.
+    
+    :param images: Images to plot
+    :param labels: True labels
+    :param predicted: Predicted labels
+    :param classes: List of class names
+    :rows: Number of rows
+    :columns: Number of columns
+    
+    :return None
+    
+    """
     
 
     axes = []
@@ -36,14 +67,25 @@ def plot_images(images, labels, predicted, classes, rows=1, columns=5):
         axes[image].set_title(subplot_tittle)
         
         img = images[image] / 2 + 0.5
-        plt.imshow(np.transpose(img, (1, 2, 0)))
+        plt.imshow((np.transpose(img, (1, 2, 0))))
         
     fig.tight_layout()
     plt.show()
     
     
     
-def make_weights_for_balanced_classes(images, sub_images, nclasses):  
+def make_weights_for_balanced_classes(images, sub_images, nclasses) -> list:  
+    
+    """
+    Make weights for balanced classes.
+    
+    :param images: Images
+    :param sub_images: Sub images
+    :param nclasses: Number of classes
+    
+    :return weights: Weights
+    
+    """
     
     count = [0] * nclasses                                                       
     for item in sub_images: 

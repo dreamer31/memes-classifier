@@ -5,6 +5,7 @@ import hiddenlayer as hl
 import sys
 
 from utils import confusion_matrix_plot, plot_images
+torch.backends.cudnn.deterministic = True
 
 
 class Train():
@@ -32,12 +33,32 @@ class Train():
         self.classes = ('Meme', 'No Meme', 'Sticker')
 
     def get_model(self):
+        
+        """
+        Return model object
+        
+        :return: model
+        
+        """
+        
         return self.model
 
-    def get_info(self):
+    def get_info(self) -> tuple:
+        
+        """
+        Return information about the model
+        
+        :return: model_info
+        """
+        
         return self.train_losses, self.test_losses
 
     def train_model(self) -> None:
+        
+        """
+        function for training the model
+        
+        """
 
         self.resumen_train()
         steps = 0
@@ -48,7 +69,7 @@ class Train():
             try:
                 for image, text, labels in self.train_loader:
                     steps += 1
-
+                        
                     image = image.to(self.device)
                     labels = labels.to(self.device)
                     text = text.type(torch.int64).to(self.device)
@@ -125,7 +146,11 @@ class Train():
                 os.remove(er[1])
                 self.train_model()
 
-    def resumen_train(self):
+    def resumen_train(self) -> None:
+        
+        """
+        Print information about the model and train
+        """
 
         print("==== Iniciando entrenamiento ==== \n")
         print(f'''Los parametros a usar son
@@ -135,10 +160,29 @@ class Train():
               epocas: {self.epochs}
               ''')
 
-    def save_model(self, path):
+    def save_model(self, path: str) -> None:
+        
+        """
+        Save the model in a file
+        
+        :param path: path to save the model
+        
+        :return: None
+        
+        """
+        
         torch.save(self.model.state_dict(), path)
 
-    def create_graph(self, image, text):
+    def create_graph(self, image, text) -> None:
+        
+        """
+        Create a graph with information about the model
+        
+        :param image: image to predict
+        :param text: text to predict
+        
+        """
+        
         hl.build_graph(model=self.model,
                        args=(image.to(self.device),
                              text.type(torch.int64).to(self.device)))

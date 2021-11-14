@@ -228,7 +228,8 @@ class RNN(nn.Module):
         self.rnn = nn.RNN(
             input_size=embed_dim,
             hidden_size=hidden_size,
-            bidirectional=True
+            bidirectional=True,
+            batch_first=True
         )
         
         self.label = nn.Linear(2*hidden_size, 256)
