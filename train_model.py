@@ -4,7 +4,9 @@ import os
 import hiddenlayer as hl
 import sys
 
-from utils import confusion_matrix_plot, plot_images
+from utils import confusion_matrix_plot, plot_images, plot_confusion_matrix
+from sklearn.metrics import confusion_matrix
+
 torch.backends.cudnn.deterministic = True
 
 
@@ -117,10 +119,10 @@ class Train():
                             self.writer.add_scalar("Acc/test", 
                                                    float(accuracy)/float(total), steps) 
                             
-                        if self.show_matrix:                       
-                            confusion_matrix_plot(self.y_true,
-                                                  self.y_predicted,
-                                                  self.classes)
+                        if self.show_matrix:
+                            con = confusion_matrix(self.y_true, self.y_predicted)      
+                            plot_confusion_matrix(con, self.classes)                 
+                            
                             
                         if self.show_image:
                             plot_images(self.images_show, self.y_true, self.y_predicted, self.classes)
