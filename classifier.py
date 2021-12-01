@@ -5,6 +5,8 @@ from PIL import Image
 from torchvision import transforms
 from pathlib import Path
 
+import os
+
 
 def get_files_from_directory(path):
     
@@ -33,8 +35,13 @@ def recognize_text(img_path, reader):
     :return: list of recognized text
     
     """
-    
-    return reader.readtext(img_path)
+    # try:
+    text = reader.readtext(img_path)
+    return text
+    # except ValueError as e:
+    #     print(f"Eliminada {img_path}")
+    #     os.remove(img_path)
+  
 
 
 def image_to_text(image_path, vocab, reader):
@@ -84,7 +91,7 @@ def load_image(image_path):
     image = torch.stack(image)
     return image
 
-def process_data(vocab):
+def process_data(vocab, model, init_directory):
     
     """
     Process all images in a directory
@@ -97,11 +104,35 @@ def process_data(vocab):
     
     results = []
     reader = easyocr.Reader(['es'])
-    iter_image = get_files_from_directory("./test_image/")
+    iter_image = get_files_from_directory(init_directory)
     for image in iter_image:
+        #print(str(image))
         text_tensor = image_to_text(str(image), vocab, reader)
         image_loaded = load_image(str(image))
-        results.append((image_loaded, text_tensor, str(image)))
+        
+        predict = model.forward(image_loaded, text_tensor)
+        val, ind = predict.squeeze(1).max(1)
+        move_image(str(image), ind.item())
         
     return results
+    
+import shutil    
+    
+def move_image(path, classify):
+    
+    
+    #print(f"La imagen {path} se clasifico como {classify}")
+    
+    meme_path = "./meme-class"
+    no_meme_path = "./no-meme-class"
+    sticker_path = "./sticker-class"
+    
+    if classify == 0:
+        shutil.move(path, meme_path)
+    elif classify == 1:
+        shutil.move(path, no_meme_path)
+    else:
+        shutil.move(path, sticker_path)
+    
+    
     
