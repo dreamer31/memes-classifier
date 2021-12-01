@@ -12,13 +12,14 @@ torch.backends.cudnn.deterministic = True
 
 class Train():
     def __init__(self, model, optimizer, criterion, train_loader, test_loader,
-                 epochs=5, device='cuda', writer=None, show_matrix=False, show_image=False) -> None:
+                 epochs=100, prints_every=1, device='cuda', writer=None, show_matrix=False, show_image=False) -> None:
         self.model = model
         self.optimizer = optimizer
         self.criterion = criterion
         self.train_loader = train_loader
         self.test_loader = test_loader
         self.epochs = epochs
+        self.prints_every = prints_every
         self.device = device
         self.writer = writer
         self.model.to(self.device)
@@ -65,17 +66,17 @@ class Train():
         self.resumen_train()
         steps = 0
         running_loss = 0
-        print_every = 10
-
+        
         for epoch in range(self.epochs):
+            
             try:
                 for image, text, labels in self.train_loader:
                     steps += 1
-                        
+                
                     image = image.to(self.device)
                     labels = labels.to(self.device)
                     text = text.type(torch.int64).to(self.device)
-
+                    
                     self.optimizer.zero_grad()
                     predict = self.model.forward(image, text)
 
@@ -83,8 +84,8 @@ class Train():
                     loss.backward()
                     self.optimizer.step()
                     running_loss += loss.item()
-
-                    if steps % print_every == 0:
+                    
+                    if steps % self.prints_every == 0:
                         test_loss = 0
                         accuracy = 0
                         total = 0
@@ -96,7 +97,7 @@ class Train():
                                 image = image.to(self.device)
                                 text = text.type(torch.int64).to(self.device)
                                 labels = labels.to(self.device)
-
+                                
                                 predict = self.model.forward(image, text)
                                 batch_loss = self.criterion(predict, labels)
                                 test_loss += batch_loss.item()
@@ -115,7 +116,7 @@ class Train():
                         
                         if self.writer is not None:
                             self.writer.add_scalar("Loss/test", 
-                                                   running_loss/print_every, steps)  
+                                                   running_loss/self.prints_every, steps)  
                             self.writer.add_scalar("Acc/test", 
                                                    float(accuracy)/float(total), steps) 
                             
@@ -128,7 +129,7 @@ class Train():
                             plot_images(self.images_show, self.y_true, self.y_predicted, self.classes)
                 
                         sys.stdout.write(f"\rEpoch {epoch+1}/{self.epochs}.. "
-                            f"Train loss: {running_loss/print_every:.3f}.. "
+                            f"Train loss: {running_loss/self.prints_every:.3f}.. "
                             f"Test loss: {test_loss/len(self.test_loader):.3f}.. "
                             f"Test accuracy: {float(accuracy)/float(total):.3f}")
                         
