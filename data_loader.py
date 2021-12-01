@@ -9,20 +9,10 @@ import os
 import torch
 import random
 
-from niacin.text import en
-from niacin.augment import RandAugment
 
 from tokenizer import TokenizerMeme
-
-from langdetect import detect
 from deep_translator import GoogleTranslator
 from googletrans import Translator
-
-from textblob import TextBlob
-import string
-
-
-
 
 
 torch.manual_seed(42)
@@ -47,15 +37,10 @@ class ImageTextData(Dataset):
         self.vocab["<pad>"] = 1
 
         self.image_out = imagen_out
-        
         self.data_aug = data_aug
-        
         self.only_meme = only_meme
-        
         self.tokenizer = TokenizerMeme(self.vocab)
-        
         self.translator = Translator()
-        
         self.bert_tokenizer = BertTokenizer.from_pretrained('bert-base-multilingual-cased', do_lower_case=True)
         
         self.transforms = transforms.Compose([transforms.Resize((56, 56)),
@@ -80,14 +65,19 @@ class ImageTextData(Dataset):
                                                          df["images"]["targets"])):
             
             targets_name = df["targets_names"][str(target)]
+            
+            # If target is dudoso, omit
             if targets_name != "Dudoso":
                 path_image = f"./{targets_name}{os.sep}img_{str(image_id).zfill(7)}.jpg"
 
+                # If the image is not in the folder, omit
                 if os.path.exists(path_image):
                 
                     image = self.process_image(path_image)
                     text = self.process_text(text)
                     target = self.process_labels(target)
+                    
+                    # Data Augmentation
                     if self.data_aug:
                         self.data_augmentation(image, text, target)
 
@@ -125,7 +115,22 @@ class ImageTextData(Dataset):
         
         return image, text, label
     
+    def get_transform(self) -> transforms.Compose:
+        return self.transform
+    
+    def get_vocab(self) -> dict:
+        return self.tokenizer.get_vocab()
+    
     def process_image(self, path_image):
+        
+        """
+        Process image and save in the Loader
+        
+        :param path_image: str -> path of image
+        
+        :return image: PIL.Image -> image
+        
+        """
         
         image = Image.open(path_image).convert("RGB")
         if self.transforms is not None:
@@ -137,6 +142,15 @@ class ImageTextData(Dataset):
         
         
     def process_text(self, text):
+        
+        """
+        Process text and save in the Loader
+        
+        :param text: str -> text to process
+        
+        :return text: list -> list of tokens
+        
+        """
         
         
         text_tensor = torch.tensor(text)
@@ -163,6 +177,14 @@ class ImageTextData(Dataset):
         
     def process_labels(self, target):
         
+        """
+        Save correct target 
+        
+        :param target: int -> target input of image
+        
+        :return target: int -> real target of image
+        
+        """
         
         if target == 4:
             if self.only_meme:
@@ -176,17 +198,22 @@ class ImageTextData(Dataset):
             self.targets.append(target - 1)
             return target -1
             
-    
-    
     def data_augmentation(self, image, text, target):
         
-        value_alt = random.random()
+        """
+        Process text and select type of augmentation
+        
+        :param image: PIL image
+        :param text: str -> text of image
+        :param target: int -> target of image
+        
+        """
+        
         try:
         
             if len(text) >= 3 or len(text) == 0:
         
-                tensor_text = []
-                augs = []
+                tensor_text, aug_method = [], []
                 if text != "":
                     
                     text = self.tokenizer.clean_text(text)                                            
@@ -202,10 +229,10 @@ class ImageTextData(Dataset):
                     
                 tensor_text = torch.tensor(tensor_text)
                 
-                augs.append(transforms.RandomResizedCrop(56)) if random.random() < 0.5 else augs.append(transforms.RandomCrop(56))
-                augs.append(transforms.RandomHorizontalFlip()) if random.random() < 0.5 else augs.append(transforms.RandomVerticalFlip())
+                aug_method.append(transforms.RandomResizedCrop(56)) if random.random() < 0.5 else aug_method.append(transforms.RandomCrop(56))
+                aug_method.append(transforms.RandomHorizontalFlip()) if random.random() < 0.5 else aug_method.append(transforms.RandomVerticalFlip())
                 
-                self.image_random_aug(image, augs)
+                self.image_random_aug(image, aug_method)
                 self.text.append(tensor_text)
                 self.targets.append(target)
                 
@@ -226,6 +253,16 @@ class ImageTextData(Dataset):
                                         
     def image_random_aug(self, image, method):
         
+        """
+        Apply random augmentation to image and save in self.image
+        
+        :param image: PIL.Image -> image to apply augmentation
+        :para method: list -> list of augmentation methods
+        
+        :return: Tensor -> image with augmentation
+        
+        """
+        
         trans = transforms.Compose([transforms.Resize((56, 56)),
                                     method[0],
                                     method[1],
@@ -235,12 +272,6 @@ class ImageTextData(Dataset):
         image_tensor = trans(image)
         self.image.append(image_tensor)
         return image_tensor
-
-    def get_transform(self) -> transforms.Compose:
-        return self.transform
-    
-    def get_vocab(self) -> dict:
-        return self.tokenizer.get_vocab()
 
 def load_split_data(datadir: str, batch_size: int=64, test_size: float=.2, imagen_out: bool=True, data_aug=False) -> tuple:
     
