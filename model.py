@@ -8,13 +8,13 @@ from stop_words import get_stop_words
 
 class CNN(nn.Module): 
 
-    def __init__(self):
+    def __init__(self, out_size):
         super(CNN, self).__init__()
-        self.conv1 = nn.Conv2d(in_channels=3, out_channels=10, kernel_size=3)
-        self.conv2 = nn.Conv2d(10, 20, kernel_size=3)
+        self.conv1 = nn.Conv2d(in_channels=3, out_channels=10, kernel_size=3, padding=1)
+        self.conv2 = nn.Conv2d(10, 20, kernel_size=3, padding=1)
         self.conv2_drop = nn.Dropout2d()
-        self.fc1 = nn.Linear(720, 1024)
-        self.fc2 = nn.Linear(1024, 256)
+        self.fc1 = nn.Linear(1280, 512)
+        self.fc2 = nn.Linear(512, out_size)
 
     def forward(self, x):
 
@@ -26,6 +26,26 @@ class CNN(nn.Module):
         x = self.fc2(x)
         return x
 
+
+class CNN1(nn.Module): 
+
+    def __init__(self):
+        super(CNN1, self).__init__()
+        self.conv1 = nn.Conv2d(in_channels=3, out_channels=10, kernel_size=3)
+        self.conv2 = nn.Conv2d(10, 20, kernel_size=3)
+        self.conv2_drop = nn.Dropout2d()
+        self.fc1 = nn.Linear(720, 1024)
+        self.fc2 = nn.Linear(1024, 256)
+
+    def forward(self, x):
+
+        x = F.relu(F.max_pool2d(self.conv1(x), 2))
+        x = F.relu(F.max_pool2d(self.conv2_drop(self.conv2(x)), 2))
+        x = x.view(x.shape[0],-1)
+        x = F.relu(self.fc1(x))
+        x = F.dropout(x, training=self.training)
+        x = self.fc2(x)
+        return x
 
 class ImageClassificator(nn.Module):
     
@@ -100,17 +120,18 @@ def make_target(batch, classes):
 
 
 class TextSentimentLinear(nn.Module):
-    def __init__(self, vocab_size, embed_dim, num_class, vocab):
+    def __init__(self, vocab_size, embed_dim, out_size, vocab):
         super().__init__()
         self.vocab = vocab
         self.embedding = nn.EmbeddingBag(vocab_size, embed_dim, mode="max")
-        self.fc = nn.Linear(embed_dim, 256)
-        # self.init_weights() # probar agregando esto
+        self.fc = nn.Linear(embed_dim, out_size)
+        #self.init_weights() # probar agregando esto
+        self.act = nn.ReLU()
 
     def init_weights(self): 
         initrange = 0.5
         self.embedding.weight.data.uniform_(-initrange, initrange)
-        self.embedding.weight.data[self.vocab["<pad>"]].zero_()
+        self.embedding.weight.data[1].zero_()
         self.fc.weight.data.uniform_(-initrange, initrange)
         self.fc.bias.data.zero_()
 
@@ -136,14 +157,14 @@ class SpatialDropout(nn.Dropout2d):
 
 class LSTMTagger(nn.Module):
 
-    def __init__(self, embedding_dim, vocab_size, tagset_size, vocab, lstm_units=128):
+    def __init__(self, embedding_dim, vocab_size, out_size, vocab, lstm_units=128):
         super(LSTMTagger, self).__init__()
         LSTM_UNTITS = lstm_units
         DENSE_HIDDEN_UNITS = 4 * LSTM_UNTITS
         
         self.embedding = nn.Embedding(vocab_size,
                                       embedding_dim,
-                                      padding_idx=vocab["<pad>"])
+                                      padding_idx=1)
         self.embedding_dropout = SpatialDropout(0.3)
 
         # The LSTM takes word embeddings as inputs, and outputs hidden states
@@ -163,7 +184,7 @@ class LSTMTagger(nn.Module):
         self.linear2 = nn.Linear(DENSE_HIDDEN_UNITS, DENSE_HIDDEN_UNITS)
         
         #self.linear_out = nn.Linear(DENSE_HIDDEN_UNITS, 1)
-        self.linear_aux_out = nn.Linear(DENSE_HIDDEN_UNITS, 256)
+        self.linear_aux_out = nn.Linear(DENSE_HIDDEN_UNITS, out_size)
            
     def forward(self, sentence):
         
@@ -192,7 +213,7 @@ class LSTMTagger(nn.Module):
     
     
 class TextSentimentConv1d(nn.Module):
-    def __init__(self, vocab_size, embed_dim, num_class, vocab):
+    def __init__(self, vocab_size, embed_dim, out_size, vocab):
         super().__init__()
         self.embedding = nn.Embedding(
             vocab_size,
@@ -201,7 +222,7 @@ class TextSentimentConv1d(nn.Module):
         )
         self.conv = nn.Conv1d(
             in_channels=1,
-            out_channels=256,
+            out_channels=out_size,
             kernel_size=3*embed_dim,
             stride=embed_dim
         )
@@ -243,21 +264,42 @@ class RNN(nn.Module):
         
         out = self.label(hidden)
         return out
+    
+class BertModelClassification(nn.Module):
+    
+    def __init__(self, bert, out_size):
         
-    
-    
+        super(BertModelClassification, self).__init__()
+        self.bert= bert        
+        self.out_size = out_size
+        self.drop = nn.Dropout(0.2)
+        self.out = nn.Linear(self.bert.config.hidden_size, 3)
+        
+        
+    def forward(self, text, attention):
+        
+        out = self.bert(input_ids=text, attention_mask = attention)["hidden_states"][-1]
+        out = torch.sum(out, dim=1)
+        out = out.view(out.shape[0], -1)
+        out = self.drop(out)
+        out = self.out(out)
+        
+        return out
+        
 class ModelMix(nn.Module):
     
-    def __init__(self, model_text, model_image):
+    def __init__(self, model_text, model_image, input_size, out_size):
         
-        super().__init__()
+        super(ModelMix, self).__init__()
         self.model_text = model_text
         self.model_image = model_image
-        self.lineal1 = nn.Linear(512, 3)
+        self.lineal1 = nn.Linear(input_size, out_size)
+        self.act = nn.Softmax(dim=1)
         
     def forward(self, image, text):
         
         text_process = self.model_text(text)
         image_process = self.model_image(image)
         out = torch.cat([text_process, image_process], 1)
-        return self.lineal1(out)
+        out = self.lineal1(out)
+        return out
