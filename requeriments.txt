@@ -5,4 +5,12 @@ sklearn
 hiddenlayer
 torchvision
 torchtext
-PIL
+Pillow
+stop_words 
+transformers 
+deep_translator 
+googletrans 
+tensorboard 
+easyocr
+opencv-python==4.5.4.60
+pytesseract

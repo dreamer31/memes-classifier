@@ -5,6 +5,8 @@ __pycache__/
 .vector_cache
 .vscode
 
+weight_models/
+
 # C extensions
 *.so
 
@@ -19,6 +21,8 @@ sticker-class/
 challenge/
 test_image/
 Img/
+categoria/
+ExtractTest/
 
 # Experiments
 runs/

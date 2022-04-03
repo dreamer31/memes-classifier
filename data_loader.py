@@ -43,7 +43,7 @@ class ImageTextData(Dataset):
         self.translator = Translator()
         self.bert_tokenizer = BertTokenizer.from_pretrained('bert-base-multilingual-cased', do_lower_case=True)
         
-        self.transforms = transforms.Compose([transforms.Resize((56, 56)),
+        self.transforms = transforms.Compose([transforms.Resize((32, 32)),
                                               transforms.ToTensor(),
                                               transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))])
 
@@ -85,7 +85,6 @@ class ImageTextData(Dataset):
                                          batch_first=True,
                                          padding_value=self.vocab["<pad>"])
         
-        print(len(self.image))
 
     def __len__(self) -> int:
         
@@ -225,7 +224,6 @@ class ImageTextData(Dataset):
                         return False
                     
                     tensor_text = self.tokenizer.tokenize(text_translate)
-                    print(f"{text} -> {text_translate}")
                     
                 tensor_text = torch.tensor(tensor_text)
                 

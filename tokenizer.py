@@ -3,7 +3,7 @@ class TokenizerMeme():
     def __init__(self, vocab):
         
         self.vocab = vocab
-        self.string_punt =".-“”–!¡?¿,;:`()[]/<>=+*&^%$#@|~[]"
+        self.string_punt ="\'\".-“”–!¡?¿,;:`()[]/<>=+*&^%$#@|~[]"
         
     def get_vocab(self):
         return self.vocab

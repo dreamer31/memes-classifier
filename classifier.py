@@ -1,9 +1,16 @@
 import torch
 import easyocr
 
+
+from tokenizer import TokenizerMeme
 from PIL import Image
 from torchvision import transforms
 from pathlib import Path
+
+import numpy as np
+import cv2
+import tempfile
+
 
 def get_files_from_directory(path):
     
@@ -32,11 +39,19 @@ def recognize_text(img_path, reader):
     :return: list of recognized text
     
     """
+    #image = Image.open(img_path)
+    #image = image.convert('RGB')
+    #image = np.array(image)
+    #im= cv2.bilateralFilter(image,5, 55,60)
+    #im = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
+    #_, im = cv2.threshold(im, 240, 255, 1)
+    
+    
     text = reader.readtext(img_path)
     return text
 
 
-def image_to_text(image_path, vocab, reader):
+def image_to_text(image_path, vocab, reader, tokenizer):
     
     """
     Transform a image to text
@@ -50,14 +65,16 @@ def image_to_text(image_path, vocab, reader):
     """
     
     text_predict = recognize_text(image_path, reader)
+    print(text_predict)
     text_tensor = [1]
     
     for element in text_predict:
-        for word in element[1].split():
-            word = word.lower()
-            if word in vocab:
-                text_tensor.append(vocab[word])
-        
+        if element[2] >= 0.5:
+            for word in element[1].split():
+                word = tokenizer.clean_text(word.lower())
+                if word in vocab:
+                    text_tensor.append(vocab[word])
+            
     text_tensor = torch.tensor([text_tensor])
     text_tensor = text_tensor.type(torch.int64)
     return text_tensor
@@ -95,10 +112,11 @@ def process_data(vocab, model, init_directory, move=False):
     """
     
     results = []
+    tokenizer = TokenizerMeme(vocab)
     reader = easyocr.Reader(['es'])
     iter_image = get_files_from_directory(init_directory)
     for image in iter_image:
-        text_tensor = image_to_text(str(image), vocab, reader)
+        text_tensor = image_to_text(str(image), vocab, reader, tokenizer)
         image_loaded = load_image(str(image))
         predict = model.forward(image_loaded, text_tensor)
         val, ind = predict.squeeze(1).max(1)
@@ -124,4 +142,14 @@ def move_image(path, classify):
         shutil.move(path, sticker_path)
     
     
-    
+
+def set_image_dpi(file_path):
+    im = Image.open(file_path)
+    length_x, width_y = im.size
+    factor = min(1, float(1024.0 / length_x))
+    size = int(factor * length_x), int(factor * width_y)
+    im_resized = im.resize(size, Image.ANTIALIAS)
+    temp_file = tempfile.NamedTemporaryFile(delete=False,   suffix='.png')
+    temp_filename = temp_file.name
+    im_resized.save(temp_filename, dpi=(300, 300))
+    return temp_filename
