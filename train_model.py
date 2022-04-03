@@ -29,6 +29,8 @@ class Train():
         self.train_losses = []
         self.test_losses = []
 
+        self.include_text = False
+
         self.y_true = []
         self.y_predicted = []
         self.images_show = []
@@ -75,10 +77,13 @@ class Train():
                 
                     image = image.to(self.device)
                     labels = labels.to(self.device)
-                    text = text.type(torch.int64).to(self.device)
-                    
-                    self.optimizer.zero_grad()
-                    predict = self.model.forward(image, text)
+                    if self.include_text:
+                        text = text.type(torch.int64).to(self.device)
+                        self.optimizer.zero_grad()
+                        predict = self.model.forward(image, text)
+                    else:
+                        self.optimizer.zero_grad()
+                        predict = self.model.forward(image)
 
                     loss = self.criterion(predict, labels)
                     loss.backward()
@@ -95,10 +100,15 @@ class Train():
                             for image, text, labels in self.test_loader:
 
                                 image = image.to(self.device)
-                                text = text.type(torch.int64).to(self.device)
                                 labels = labels.to(self.device)
-                                
-                                predict = self.model.forward(image, text)
+
+                                if self.include_text:
+                                    text = text.type(torch.int64).to(self.device)
+                                    predict = self.model.forward(image, text)
+
+                                else:
+                                    predict = self.model.forward(image)
+
                                 batch_loss = self.criterion(predict, labels)
                                 test_loss += batch_loss.item()
 
@@ -148,6 +158,7 @@ class Train():
                 er = str(error).split("'")
                 os.remove(er[1])
                 self.train_model()
+
 
     def resumen_train(self) -> None:
         
