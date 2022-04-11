@@ -65,7 +65,6 @@ def image_to_text(image_path, vocab, reader, tokenizer):
     """
     
     text_predict = recognize_text(image_path, reader)
-    print(text_predict)
     text_tensor = [1]
     
     for element in text_predict:
