@@ -12,7 +12,8 @@ torch.backends.cudnn.deterministic = True
 
 class Train():
     def __init__(self, model, optimizer, criterion, train_loader, test_loader,
-                 epochs=100, prints_every=1, device='cuda', writer=None, show_matrix=False, show_image=False) -> None:
+                 epochs=100, prints_every=1, device='cuda', writer=None, show_matrix=False, show_image=False,
+                 classes = ('Meme', 'No Meme', 'Sticker'), include_text = False) -> None:
         self.model = model
         self.optimizer = optimizer
         self.criterion = criterion
@@ -29,13 +30,13 @@ class Train():
         self.train_losses = []
         self.test_losses = []
 
-        self.include_text = False
+        self.include_text = include_text
 
         self.y_true = []
         self.y_predicted = []
         self.images_show = []
 
-        self.classes = ('Meme', 'No Meme', 'Sticker')
+        self.classes = classes
 
     def get_model(self):
         
@@ -131,8 +132,9 @@ class Train():
                                                    float(accuracy)/float(total), steps) 
                             
                         if self.show_matrix:
-                            con = confusion_matrix(self.y_true, self.y_predicted)      
-                            plot_confusion_matrix(con, self.classes)                 
+                            # con = confusion_matrix(self.y_true, self.y_predicted)      
+                            # plot_confusion_matrix(con, self.classes)   
+                            confusion_matrix_plot(self.y_true, self.y_predicted, self.classes)              
                             
                             
                         if self.show_image:
