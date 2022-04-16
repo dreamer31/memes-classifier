@@ -1,3 +1,4 @@
+from tkinter.tix import TEXT
 import torch.nn as nn
 import torch.nn.functional as F
 import torch
@@ -280,18 +281,17 @@ class BertModelClassification(nn.Module):
         self.bert= bert        
         self.out_size = out_size
         self.drop = nn.Dropout(0.2)
-        self.out = nn.Linear(self.bert.config.hidden_size, 3)
+        self.out = nn.Linear(self.bert.config.hidden_size, out_size)
         
         
     def forward(self, text, attention):
         
-        out = self.bert(input_ids=text, attention_mask = attention)["hidden_states"][-1]
-        out = torch.sum(out, dim=1)
-        out = out.view(out.shape[0], -1)
-        out = self.drop(out)
-        out = self.out(out)
+        h = self.bert(input_ids = text, attention_mask = attention).last_hidden_state
+        h_cls = h[:, 0]
+        logits = self.out(h_cls)
+
         
-        return out
+        return logits
         
 class ModelMix(nn.Module):
     

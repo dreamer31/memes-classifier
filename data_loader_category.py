@@ -6,6 +6,8 @@ from utils import weights_balanced, make_weights_for_balanced_classes
 from tokenizer_category import TokernizerMemeCategory
 from torch.nn.utils.rnn import pad_sequence
 from category import categories
+from transformers import BertTokenizer
+
 
 
 import torch
@@ -14,11 +16,13 @@ import pandas as pd
 
 
 class DataLoaderCategory(Dataset):
-    def __init__(self, data_path, shuffle=True, num_workers=4, data_augmentation = False):
+    def __init__(self, data_path, shuffle=True, num_workers=4, data_augmentation = False, BERT=False):
         self.data_path = data_path
         self.shuffle = shuffle
         self.num_workers = num_workers
         self.data_augmentation = data_augmentation
+        self.BERT = BERT
+        self.bert_tokenizer = BertTokenizer.from_pretrained("bert-base-cased")
 
         self.transforms = transforms.Compose([transforms.Resize((56, 56)),
                                               transforms.ToTensor(),
@@ -32,6 +36,8 @@ class DataLoaderCategory(Dataset):
         self.tematica = list(self.data["TEMATICA"])
         self.image_links = list(self.data['links'])
         self.text = []
+        self.text_bert = []
+        self.mask_bert = []
         self.image = []
         self.tematicas_name = ()
         self.cont_tematica = {}
@@ -52,19 +58,19 @@ class DataLoaderCategory(Dataset):
                 image = self.process_image(image_link)
                 self.label.append(aux_tematica[self.tematica[image_cont]])
                 self.cont_tematica[categories[self.tematica[image_cont]]] += 1
-                text_process = self.process_text(self.data["predict_text"][image_cont])
+                text_process = self.process_text(self.data["text_manual"][image_cont])
+
+                if self.BERT:
+                    self.process_text_bert(self.data["text_manual"][image_cont])
 
                 if self.data_augmentation:
                     self.process_augmentation(image, text_process, self.label[image_cont])
                     self.cont_tematica[categories[self.tematica[image_cont]]] += 1
 
-
-
             image_cont += 1
         self.text = pad_sequence(self.text,
                                          batch_first=True,
                                          padding_value=self.tokenizer.get_vocab()["<pad>"])
-
 
     def __len__(self):
         return len(self.image)
@@ -74,6 +80,12 @@ class DataLoaderCategory(Dataset):
         image = self.image[index]
         text = self.text[index]
         label = self.label[index]
+
+        if self.BERT:
+            text_bert = self.text_bert[index]
+            mask_bert = self.mask_bert[index]
+            return image, text, text_bert, mask_bert, label
+
         
         return image, text, label
 
@@ -104,6 +116,23 @@ class DataLoaderCategory(Dataset):
     def get_cont_tematica(self):
         return self.cont_tematica
 
+
+    def process_text_bert(self, text: str) -> torch.Tensor:
+        """
+        Process text and return tensor
+        """
+        encoded = self.bert_tokenizer.encode_plus(
+            text=text,
+            add_special_tokens=True,
+            max_length = 32,            
+            pad_to_max_length=True,
+            return_attention_mask = True,
+            return_tensors='pt',
+        )
+
+            
+        self.text_bert.append(encoded['input_ids'].flatten())
+        self.mask_bert.append(encoded['attention_mask'].flatten())
 
 
     
@@ -139,9 +168,9 @@ class DataLoaderCategory(Dataset):
         return image
 
 
-def load_split_data(datadir: str, test_size: float = 0.2, batch_size: int = 32, data_augmentation: bool = False):  
+def load_split_data(datadir: str, test_size: float = 0.2, batch_size: int = 32, data_augmentation: bool = False, BERT = False):  
     
-    model_dataset = DataLoaderCategory(datadir, data_augmentation=data_augmentation)
+    model_dataset = DataLoaderCategory(datadir, data_augmentation=data_augmentation, BERT=BERT)
     print("cantidad datos", len(model_dataset))
 
     total_lenght = len(model_dataset)

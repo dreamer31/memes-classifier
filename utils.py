@@ -68,15 +68,20 @@ def confusion_matrix_plot(y_true, y_predicted, classes) -> None:
     
     """
 
-    cf_matrix = confusion_matrix(y_true, y_predicted)
+    label = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
+    cf_matrix = confusion_matrix(y_true, y_predicted, labels=label)
+    cm_normalized = cf_matrix.astype('float') / cf_matrix.sum(axis=1)[:, np.newaxis]
     
-    df_cm = pd.DataFrame(cf_matrix/np.sum(cf_matrix) * 3,
+    df_cm = pd.DataFrame(cm_normalized,
                          index=[i for i in classes],
                          columns=[i for i in classes])
 
-    plt.figure(figsize=(12, 7))
+    fig = plt.figure(figsize=(12, 7))
+
     sn.heatmap(df_cm, annot=True)
     plt.show()
+    fig.savefig('confusion_matrix.png')
+    
 
 
 def get_device() -> torch.device:
@@ -149,3 +154,31 @@ def make_weights_for_balanced_classes(images, sub_images, nclasses) -> list:
         weight[idx] = weight_per_class[images[item]]
                                  
     return weight  
+
+
+def weights_balanced(labels, nclasses):
+
+    """
+    Make weights for balanced classes.
+    
+    :param labels: Labels
+    :param nclasses: Number of classes
+    
+    :return weights: Weights
+    
+    """
+    
+    count = [0] * nclasses                                                       
+    for item in labels: 
+        count[item] += 1  
+                     
+    weight_per_class = [0.] * nclasses                                      
+    N = float(sum(count))                                                   
+    for i in range(nclasses):                                                   
+        weight_per_class[i] = N/float(count[i])                                 
+    
+    weight = [.0] * len(labels)
+    for idx, item in enumerate(labels):
+        weight[idx] = weight_per_class[item]
+                                 
+    return weight

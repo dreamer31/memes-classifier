@@ -162,6 +162,99 @@ class Train():
                 self.train_model()
 
 
+    def train_bert(self):
+
+        self.resumen_train()
+        steps = 0
+        running_loss = 0
+        
+        for epoch in range(self.epochs):
+            
+            try:
+                for image, text, text_bert, mask_bert, labels in self.train_loader:
+                    steps += 1
+                
+                    image = image.to(self.device)
+                    text_bert = text_bert.to(self.device)
+                    mask_bert = mask_bert.to(self.device)
+                    labels = labels.to(self.device)
+
+                
+                    self.optimizer.zero_grad()
+                    predict = self.model.forward(text_bert, mask_bert)
+
+                    loss = self.criterion(predict, labels)
+                    loss.backward()
+                    self.optimizer.step()
+                    running_loss += loss.item()
+                    
+                    if steps % self.prints_every == 0:
+                        test_loss = 0
+                        accuracy = 0
+                        total = 0
+                        self.model.eval()
+
+                        with torch.no_grad():
+                            for image, text, text_bert, mask_bert, labels in self.test_loader:
+
+                                image = image.to(self.device)
+                                labels = labels.to(self.device)
+                                text_bert = text_bert.to(self.device)
+                                mask_bert = mask_bert.to(self.device)
+
+                                predict = self.model.forward(text_bert, mask_bert)
+
+                                batch_loss = self.criterion(predict, labels)
+                                test_loss += batch_loss.item()
+
+                                val, ind = predict.squeeze(1).max(1)
+                                accuracy += (ind == labels).sum()
+
+                                self.y_true.extend(labels.cpu().numpy())
+                                self.y_predicted.extend(ind.cpu().numpy())
+                                self.images_show.extend(image.cpu().numpy())
+
+                                total += len(labels)
+
+                        self.train_losses.append(running_loss/len(self.train_loader))
+                        self.test_losses.append(test_loss/len(self.test_loader))
+                        
+                        if self.writer is not None:
+                            self.writer.add_scalar("Loss/test", 
+                                                   running_loss/self.prints_every, steps)  
+                            self.writer.add_scalar("Acc/test", 
+                                                   float(accuracy)/float(total), steps) 
+                            
+                        if self.show_matrix:
+                            # con = confusion_matrix(self.y_true, self.y_predicted)      
+                            # plot_confusion_matrix(con, self.classes)   
+                            confusion_matrix_plot(self.y_true, self.y_predicted, self.classes)              
+                            
+                            
+                        if self.show_image:
+                            plot_images(self.images_show, self.y_true, self.y_predicted, self.classes)
+                
+                        sys.stdout.write(f"\rEpoch {epoch+1}/{self.epochs}.. "
+                            f"Train loss: {running_loss/self.prints_every:.3f}.. "
+                            f"Test loss: {test_loss/len(self.test_loader):.3f}.. "
+                            f"Test accuracy: {float(accuracy)/float(total):.3f}")
+                        
+                        running_loss = 0
+                        accuracy = 0
+                        total = 0
+  
+                        self.y_true = []
+                        self.y_predicted = []
+                        self.images_show = []
+             
+                        self.model.train()
+          
+            except PIL.UnidentifiedImageError as error:
+                print(error)
+                er = str(error).split("'")
+                os.remove(er[1])
+                self.train_model()
+
     def resumen_train(self) -> None:
         
         """
