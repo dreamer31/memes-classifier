@@ -22,7 +22,7 @@ class DataLoaderCategory(Dataset):
         self.num_workers = num_workers
         self.data_augmentation = data_augmentation
         self.BERT = BERT
-        self.bert_tokenizer = BertTokenizer.from_pretrained("bert-base-cased")
+        self.bert_tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
 
         self.transforms = transforms.Compose([transforms.Resize((56, 56)),
                                               transforms.ToTensor(),
@@ -64,6 +64,7 @@ class DataLoaderCategory(Dataset):
                     self.process_text_bert(self.data["text_manual"][image_cont])
 
                 if self.data_augmentation:
+                    self.process_text_bert(self.data["text_manual"][image_cont])
                     self.process_augmentation(image, text_process, self.label[image_cont])
                     self.cont_tematica[categories[self.tematica[image_cont]]] += 1
 
@@ -124,8 +125,8 @@ class DataLoaderCategory(Dataset):
         encoded = self.bert_tokenizer.encode_plus(
             text=text,
             add_special_tokens=True,
-            max_length = 32,            
-            pad_to_max_length=True,
+            max_length = 16,
+            pad_to_max_length = True,             
             return_attention_mask = True,
             return_tensors='pt',
         )

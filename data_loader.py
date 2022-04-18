@@ -27,7 +27,8 @@ class ImageTextData(Dataset):
 
     def __init__(self, df: str, transform: bool=False,
                  only_meme: bool=False, imagen_out: bool=True,
-                 data_aug: bool=False):
+                 data_aug: bool=False,
+                 bert: bool=False,):
 
         # Dict with the initial info
         self.df = df
@@ -41,9 +42,10 @@ class ImageTextData(Dataset):
         self.only_meme = only_meme
         self.tokenizer = TokenizerMeme(self.vocab)
         self.translator = Translator()
-        self.bert_tokenizer = BertTokenizer.from_pretrained('bert-base-multilingual-cased', do_lower_case=True)
+        self.bert = bert
+        self.bert_tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
         
-        self.transforms = transforms.Compose([transforms.Resize((32, 32)),
+        self.transforms = transforms.Compose([transforms.Resize((56, 56)),
                                               transforms.ToTensor(),
                                               transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))])
 
@@ -58,11 +60,11 @@ class ImageTextData(Dataset):
         self.keys_vocab = list(self.vocab.keys())
         self.values_vocab = list(self.vocab.values())
         
-
         # Process data
         for i, (image_id, text, target) in enumerate(zip(df["images"]["img_ids"],
                                                          df["images"]["texts"],
                                                          df["images"]["targets"])):
+
             
             targets_name = df["targets_names"][str(target)]
             
@@ -81,7 +83,7 @@ class ImageTextData(Dataset):
                     if self.data_aug:
                         self.data_augmentation(image, text, target)
 
-        self.text_padding = pad_sequence(self.text,
+        self.text = pad_sequence(self.text,
                                          batch_first=True,
                                          padding_value=self.vocab["<pad>"])
         
@@ -111,6 +113,11 @@ class ImageTextData(Dataset):
         image = self.image[index]
         label = self.targets[index]
         text = self.text[index]
+
+        if self.bert:  
+            text_bert = self.text_bert[index]
+            mask_bert = self.mask_bert[index]
+            return image, text, text_bert, mask_bert, label
         
         return image, text, label
     
@@ -160,16 +167,16 @@ class ImageTextData(Dataset):
             text_str += f"{self.keys_vocab[self.values_vocab.index(id_text)]} "
             
         encoded = self.bert_tokenizer.encode_plus(
-            text_str,
+            text=text_str,
             add_special_tokens=True,
-            max_length=128,
-            padding='max_length',
-            pad_to_max_length=True,
+            max_length = 16,
+            pad_to_max_length = True,            
+            return_attention_mask = True,
             return_tensors='pt',
         )
             
-        self.text_bert.append(encoded['input_ids'])
-        self.mask_bert.append(encoded['attention_mask'])
+        self.text_bert.append(encoded['input_ids'].flatten())
+        self.mask_bert.append(encoded['attention_mask'].flatten())
         
         return text_str[:-1]
         
@@ -271,7 +278,7 @@ class ImageTextData(Dataset):
         self.image.append(image_tensor)
         return image_tensor
 
-def load_split_data(datadir: str, batch_size: int=64, test_size: float=.2, imagen_out: bool=True, data_aug=False) -> tuple:
+def load_split_data(datadir: str, batch_size: int=64, test_size: float=.2, imagen_out: bool=True, data_aug=False, bert: bool = True) -> tuple:
     
     """
     Create the split dataset for train an test with test_size
@@ -288,8 +295,9 @@ def load_split_data(datadir: str, batch_size: int=64, test_size: float=.2, image
 
     model_dataset = ImageTextData(datadir,
                                   imagen_out=imagen_out,
-                                  data_aug=data_aug
-                                  )
+                                  data_aug=data_aug,
+                                  bert=bert)
+                                  
 
     total_lenght = len(model_dataset)
     test_lenght = int(total_lenght * test_size)
@@ -314,12 +322,11 @@ def load_split_data(datadir: str, batch_size: int=64, test_size: float=.2, image
     trainloader = torch.utils.data.DataLoader(train_data,
                                               sampler=sampler_train,
                                               batch_size=batch_size,
-                                              collate_fn=generate_batch
+                                              #collate_fn=generate_batch
                                               )
     testloader = torch.utils.data.DataLoader(test_data,
-                                             sampler = sampler_test,
                                              batch_size=batch_size,
-                                             collate_fn=generate_batch,                                        
+                                             #collate_fn=generate_batch
                                              )
     return trainloader, testloader, model_dataset.get_vocab()
 
@@ -337,16 +344,19 @@ def generate_batch(batch: tuple) -> tuple:
     
     """
 
-    label_list, text_list, image_list = [], [], []
-    for (_image, _text, _label) in batch:
+    label_list, text_list, image_list, text_bert, mask_bert = [], [], [], [], []
+    for (_image, _text, _text_bert, _mask_bert, _label) in batch:
         label_list.append(_label)
         text_list.append(_text)
         image_list.append(_image)
 
-    
+
+
+    print(torch.stack(text_bert))
     return (
         torch.stack(image_list),
         pad_sequence(text_list, batch_first=True, padding_value=1),
+
         torch.tensor(label_list)
     )
     
