@@ -285,7 +285,6 @@ class BertModelClassification(nn.Module):
         
         
     def forward(self, text, attention):
-        
         h = self.bert(input_ids = text, attention_mask = attention).last_hidden_state
         h_cls = h[:, 0]
         logits = self.out(h_cls)
@@ -309,4 +308,26 @@ class ModelMix(nn.Module):
         image_process = self.model_image(image)
         out = torch.cat([text_process, image_process], 1)
         out = self.lineal1(out)
+        return out
+
+
+class ModelMixBert(nn.Module):
+    
+    def __init__(self, model_image, bert, input_size, out_size):
+        
+        super(ModelMixBert, self).__init__()
+        self.bert = bert
+        self.model_image = model_image
+        self.out_size = out_size
+        self.drop = nn.Dropout(0.2)
+        self.out = nn.Linear(input_size, out_size)
+        
+        
+    def forward(self, image, text, attention):
+        
+        text_process = self.bert(text, attention)
+        image_process = self.model_image(image)
+        out = torch.cat([text_process, image_process], 1)
+        out = self.out(out)
+
         return out

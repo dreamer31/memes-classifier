@@ -162,7 +162,7 @@ class Train():
                 self.train_model()
 
 
-    def train_bert(self):
+    def train_bert(self, include_image = False):
 
         self.resumen_train()
         steps = 0
@@ -181,7 +181,11 @@ class Train():
 
                 
                     self.optimizer.zero_grad()
-                    predict = self.model.forward(text_bert, mask_bert)
+                    if include_image:
+                        predict = self.model.forward(image, text_bert, mask_bert)
+
+                    else:
+                        predict = self.model.forward(text_bert, mask_bert)
 
                     loss = self.criterion(predict, labels)
                     loss.backward()
@@ -202,7 +206,11 @@ class Train():
                                 text_bert = text_bert.to(self.device)
                                 mask_bert = mask_bert.to(self.device)
 
-                                predict = self.model.forward(text_bert, mask_bert)
+                                if include_image:
+                                    predict = self.model.forward(image, text_bert, mask_bert)
+
+                                else:
+                                    predict = self.model.forward(text_bert, mask_bert)
 
                                 batch_loss = self.criterion(predict, labels)
                                 test_loss += batch_loss.item()
