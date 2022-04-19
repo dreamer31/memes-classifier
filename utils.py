@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import itertools
 
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import confusion_matrix, precision_score, recall_score, f1_score, classification_report
 
 
 
@@ -81,6 +81,30 @@ def confusion_matrix_plot(y_true, y_predicted, classes) -> None:
     sn.heatmap(df_cm, annot=True)
     plt.show()
     fig.savefig('confusion_matrix.png')
+
+
+def show_metrics(y_true, y_predicted, classes) -> None:
+        
+        """
+        Show metrics for a given set of labels and predicted labels.
+        
+        :param y_true: True labels
+        :param y_predicted: Predicted labels
+        :param classes: List of class names
+        
+        :return None
+        
+        """
+        
+        print("Recall")
+        print(recall_score(y_true, y_predicted, average='macro'))
+        print("Precision")
+        print(precision_score(y_true, y_predicted, average='macro'))
+        print("F1 Score")
+        print(f1_score(y_true, y_predicted, average='macro'))
+        print("Classification report:")
+        print(classification_report(y_true, y_predicted, target_names=classes))
+        print("Confusion matrix:")
     
 
 

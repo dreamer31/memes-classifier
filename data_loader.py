@@ -43,7 +43,7 @@ class ImageTextData(Dataset):
         self.tokenizer = TokenizerMeme(self.vocab)
         self.translator = Translator()
         self.bert = bert
-        self.bert_tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+        self.bert_tokenizer = BertTokenizer.from_pretrained('bert-base-multilingual-cased')
         
         self.transforms = transforms.Compose([transforms.Resize((56, 56)),
                                               transforms.ToTensor(),

@@ -4,7 +4,7 @@ import os
 import hiddenlayer as hl
 import sys
 
-from utils import confusion_matrix_plot, plot_images, plot_confusion_matrix
+from utils import confusion_matrix_plot, plot_images, plot_confusion_matrix, show_metrics
 from sklearn.metrics import confusion_matrix
 
 torch.backends.cudnn.deterministic = True
@@ -13,7 +13,7 @@ torch.backends.cudnn.deterministic = True
 class Train():
     def __init__(self, model, optimizer, criterion, train_loader, test_loader,
                  epochs=100, prints_every=1, device='cuda', writer=None, show_matrix=False, show_image=False,
-                 classes = ('Meme', 'No Meme', 'Sticker'), include_text = False) -> None:
+                 classes = ('Meme', 'No Meme', 'Sticker'), include_text = False, show_metrics = False) -> None:
         self.model = model
         self.optimizer = optimizer
         self.criterion = criterion
@@ -26,6 +26,7 @@ class Train():
         self.model.to(self.device)
         self.show_matrix = show_matrix
         self.show_image = show_image
+        self.show_metrics = show_metrics
 
         self.train_losses = []
         self.test_losses = []
@@ -134,7 +135,12 @@ class Train():
                         if self.show_matrix:
                             # con = confusion_matrix(self.y_true, self.y_predicted)      
                             # plot_confusion_matrix(con, self.classes)   
-                            confusion_matrix_plot(self.y_true, self.y_predicted, self.classes)              
+                            confusion_matrix_plot(self.y_true, self.y_predicted, self.classes)   
+
+                        if self.show_metrics:
+                            show_metrics(self.y_true, self.y_predicted, self.classes)
+
+
                             
                             
                         if self.show_image:
@@ -236,7 +242,10 @@ class Train():
                         if self.show_matrix:
                             # con = confusion_matrix(self.y_true, self.y_predicted)      
                             # plot_confusion_matrix(con, self.classes)   
-                            confusion_matrix_plot(self.y_true, self.y_predicted, self.classes)              
+                            confusion_matrix_plot(self.y_true, self.y_predicted, self.classes)     
+
+                        if self.show_metrics:
+                            show_metrics(self.y_true, self.y_predicted, self.classes)         
                             
                             
                         if self.show_image:
