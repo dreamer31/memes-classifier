@@ -282,15 +282,17 @@ class BertModelClassification(nn.Module):
         self.out_size = out_size
         self.drop = nn.Dropout(0.2)
         self.out = nn.Linear(self.bert.config.hidden_size, out_size)
+        self.act = nn.Softmax(dim=1)
         
         
     def forward(self, text, attention):
         h = self.bert(input_ids = text, attention_mask = attention).last_hidden_state
         h_cls = h[:, 0]
-        logits = self.out(h_cls)
+        out = self.drop(h_cls)
+        out = self.out(out)
 
         
-        return logits
+        return out
         
 class ModelMix(nn.Module):
     
