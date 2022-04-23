@@ -6,7 +6,8 @@ from utils import weights_balanced, make_weights_for_balanced_classes
 from tokenizer_category import TokernizerMemeCategory
 from torch.nn.utils.rnn import pad_sequence
 from category import categories
-from transformers import BertTokenizer
+from transformers import BertTokenizer, PreTrainedTokenizerFast, AutoTokenizer
+from data_augmentation import DataAugmentator
 
 
 
@@ -22,13 +23,13 @@ class DataLoaderCategory(Dataset):
         self.num_workers = num_workers
         self.data_augmentation = data_augmentation
         self.BERT = BERT
-        self.bert_tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
+        self.bert_tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased", do_lower_case=True)
 
         self.transforms = transforms.Compose([transforms.Resize((56, 56)),
                                               transforms.ToTensor(),
                                               transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))])
 
-        self.augmentation = transforms.Compose([transforms.RandomHorizontalFlip()])
+        self.augmentator = DataAugmentator()
         self.tokenizer = TokernizerMemeCategory()
         
         self.data = pd.read_csv(self.data_path)
@@ -56,16 +57,17 @@ class DataLoaderCategory(Dataset):
             if image_link != "No":
                 image_link = "./categoria/images/" + image_link
                 image = self.process_image(image_link)
+                text = self.data["text_manual"][image_cont]
                 self.label.append(aux_tematica[self.tematica[image_cont]])
                 self.cont_tematica[categories[self.tematica[image_cont]]] += 1
-                text_process = self.process_text(self.data["text_manual"][image_cont])
+                text_process = self.process_text(text)
 
                 if self.BERT:
                     self.process_text_bert(self.data["text_manual"][image_cont])
 
                 if self.data_augmentation:
-                    self.process_text_bert(self.data["text_manual"][image_cont])
-                    self.process_augmentation(image, text_process, self.label[image_cont])
+
+                    self.process_augmentation(image_link, text,  aux_tematica[self.tematica[image_cont]])
                     self.cont_tematica[categories[self.tematica[image_cont]]] += 1
 
             image_cont += 1
@@ -125,7 +127,7 @@ class DataLoaderCategory(Dataset):
         encoded = self.bert_tokenizer.encode_plus(
             text=text,
             add_special_tokens=True,
-            max_length = 16,
+            max_length = 32,
             pad_to_max_length = True,             
             return_attention_mask = True,
             return_tensors='pt',
@@ -162,10 +164,12 @@ class DataLoaderCategory(Dataset):
         """
         Data augmentation
         """
-        image = self.augmentation(image)
-        self.image.append(image)
+        image_augment = self.augmentator.augment_image(image)
+        text_augment = self.augmentator.augment_text(text)
+        self.process_text_bert(text_augment)
+        self.image.append(image_augment)
         self.label.append(label)
-        self.text.append(text)
+        self.text.append(self.process_text(text_augment))
         return image
 
 
