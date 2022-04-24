@@ -23,6 +23,7 @@ test_image/
 Img/
 categoria/
 ExtractTest/
+html_info/
 
 # Experiments
 runs/

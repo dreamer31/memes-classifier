@@ -4,7 +4,7 @@ import os
 import hiddenlayer as hl
 import sys
 
-from utils import confusion_matrix_plot, plot_images, plot_confusion_matrix, show_metrics
+from src.utils.utils import confusion_matrix_plot, plot_images, plot_confusion_matrix, show_metrics
 from sklearn.metrics import confusion_matrix
 
 torch.backends.cudnn.deterministic = True

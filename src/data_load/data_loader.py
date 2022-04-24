@@ -2,7 +2,7 @@ from torchvision import transforms
 from torch.utils.data import Dataset
 from torch.nn.utils.rnn import pad_sequence
 from PIL import Image
-from utils import make_weights_for_balanced_classes
+from src.utils.utils import make_weights_for_balanced_classes
 from transformers import BertTokenizer
 
 import os
@@ -10,7 +10,7 @@ import torch
 import random
 
 
-from tokenizer import TokenizerMeme
+from src.tokenizers.tokenizer import TokenizerMeme
 from deep_translator import GoogleTranslator
 from googletrans import Translator
 
@@ -43,7 +43,7 @@ class ImageTextData(Dataset):
         self.tokenizer = TokenizerMeme(self.vocab)
         self.translator = Translator()
         self.bert = bert
-        self.bert_tokenizer = BertTokenizer.from_pretrained('bert-base-multilingual-cased')
+        self.bert_tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
         
         self.transforms = transforms.Compose([transforms.Resize((56, 56)),
                                               transforms.ToTensor(),

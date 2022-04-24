@@ -1,13 +1,18 @@
+import sys
+sys.path.append("../") 
+import os
+print (os.getcwd())
+
 from cgi import test
 from torch.utils.data import Dataset
 from PIL import Image
 from torchvision import transforms
-from utils import weights_balanced, make_weights_for_balanced_classes
-from tokenizer_category import TokernizerMemeCategory
+from src.utils.utils import weights_balanced, make_weights_for_balanced_classes
+from src.tokenizers.tokenizer_category import TokernizerMemeCategory
 from torch.nn.utils.rnn import pad_sequence
-from category import categories
+from src.utils.category import categories
 from transformers import BertTokenizer, PreTrainedTokenizerFast, AutoTokenizer
-from data_augmentation import DataAugmentator
+from src.data_load.data_augmentation import DataAugmentator
 
 
 

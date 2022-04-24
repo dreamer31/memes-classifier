@@ -46,7 +46,9 @@ class DataAugmentator:
         translator_en = GoogleTranslator(source='es', target='en')
         translator_es = GoogleTranslator(source='en', target='es')
         text_en = translator_en.translate(text)
-        return translator_es.translate(text_en)
+        text_es = translator_es.translate(text_en)
+
+        return text_es
 
     def augment_text(self, text):
         """
