@@ -139,7 +139,7 @@ def image_to_text_bert(image_path, reader):
     :return: tensor of the text
     
     """
-    
+
     text_predict = recognize_text(image_path, reader)
     text = ""
     
@@ -147,12 +147,10 @@ def image_to_text_bert(image_path, reader):
 
         for word in element[1].split():
             word = word.lower()
-            text += word + " "
-            
-
+            text += word + " "       
     return text
 
-def process_data_bert(model, init_directory, move=False):
+def process_data_bert(model, init_directory, classes, move=False, show_info = False):
     
     """
     Process all images in a directory
@@ -174,7 +172,7 @@ def process_data_bert(model, init_directory, move=False):
             text=text_image,
             add_special_tokens=True,
             max_length = 16,
-            pad_to_max_length = True,            
+            padding='max_length',           
             return_attention_mask = True,
             return_tensors='pt',
         )
@@ -187,6 +185,10 @@ def process_data_bert(model, init_directory, move=False):
 
         val, ind = predict.squeeze(1).max(1)
         results.append((str(image), ind.item()))
+        
+        if show_info:
+            print(f"La imagen {str(image)} fue clasificada como: {classes[ind.item()]}")
+
         if move:
             move_image(str(image), ind.item())
         
