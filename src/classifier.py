@@ -2,10 +2,12 @@ import torch
 import easyocr
 
 
-from tokenizer import TokenizerMeme
+from src.tokenizers.tokenizer import TokenizerMeme
 from PIL import Image
 from torchvision import transforms
 from pathlib import Path
+from transformers import BertTokenizer, PreTrainedTokenizerFast, AutoTokenizer
+
 
 import numpy as np
 import cv2
@@ -68,11 +70,11 @@ def image_to_text(image_path, vocab, reader, tokenizer):
     text_tensor = [1]
     
     for element in text_predict:
-        if element[2] >= 0.5:
-            for word in element[1].split():
-                word = tokenizer.clean_text(word.lower())
-                if word in vocab:
-                    text_tensor.append(vocab[word])
+
+        for word in element[1].split():
+            word = tokenizer.clean_text(word.lower())
+            if word in vocab:
+                text_tensor.append(vocab[word])
             
     text_tensor = torch.tensor([text_tensor])
     text_tensor = text_tensor.type(torch.int64)
@@ -89,7 +91,7 @@ def load_image(image_path):
     
     """
     
-    train_transforms = transforms.Compose([transforms.Resize((32, 32)),
+    train_transforms = transforms.Compose([transforms.Resize((56, 56)),
                                             transforms.ToTensor(),
                                             transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))])
 
@@ -112,7 +114,7 @@ def process_data(vocab, model, init_directory, move=False):
     
     results = []
     tokenizer = TokenizerMeme(vocab)
-    reader = easyocr.Reader(['es'])
+    reader = easyocr.Reader(['en'])
     iter_image = get_files_from_directory(init_directory)
     for image in iter_image:
         text_tensor = image_to_text(str(image), vocab, reader, tokenizer)
@@ -124,6 +126,73 @@ def process_data(vocab, model, init_directory, move=False):
             move_image(str(image), ind.item())
         
     return results
+
+def image_to_text_bert(image_path, reader):
+    
+    """
+    Transform a image to text
+    
+    :param image_path: path of the image
+    :param vocab: vocabulary of the text
+    :param reader: reader of easyocr
+    
+    :return: tensor of the text
+    
+    """
+    
+    text_predict = recognize_text(image_path, reader)
+    text = ""
+    
+    for element in text_predict:
+
+        for word in element[1].split():
+            word = word.lower()
+            text += word + " "
+            
+
+    return text
+
+def process_data_bert(model, init_directory, move=False):
+    
+    """
+    Process all images in a directory
+    
+    :param vocab: vocabulary of the text
+    
+    :return: list of tensors of the images with text
+    
+    """
+    
+    results = []
+    bert_tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+    reader = easyocr.Reader(['en'])
+    iter_image = get_files_from_directory(init_directory)
+
+    for image in iter_image:
+        text_image = image_to_text_bert(str(image), reader)
+        encoded = bert_tokenizer.encode_plus(
+            text=text_image,
+            add_special_tokens=True,
+            max_length = 16,
+            pad_to_max_length = True,            
+            return_attention_mask = True,
+            return_tensors='pt',
+        )
+        mask = encoded['attention_mask'].flatten().unsqueeze(0)
+        text_tensor = encoded['input_ids'].flatten().unsqueeze(0)
+
+        image_loaded = load_image(str(image))
+
+        predict = model.forward(image_loaded, text_tensor, mask)
+
+        val, ind = predict.squeeze(1).max(1)
+        results.append((str(image), ind.item()))
+        if move:
+            move_image(str(image), ind.item())
+        
+    return results
+
+
     
 import shutil    
     
