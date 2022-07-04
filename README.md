@@ -36,6 +36,8 @@ En este caso las imágenes serán movidas a las carpetas correspondientes, mostr
 
 ## Pesos
 
+Incluir estos pesos en una carpeta llamada weight_models
+
 Bert CNN Classificator: https://drive.google.com/file/d/1-MJUZEOy3wNIQD0E9bDK7FVsZ7823JW9/view?usp=sharing.
 
 Bert 7 Topics: https://drive.google.com/file/d/1y6PPydfwmb47G_1x_2WNxvGcblvE5lkh/view?usp=sharing
