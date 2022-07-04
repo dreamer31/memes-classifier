@@ -13,7 +13,7 @@ torch.backends.cudnn.deterministic = True
 class Train():
     def __init__(self, model, optimizer, criterion, train_loader, test_loader,
                  epochs=100, prints_every=1, device='cuda', writer=None, show_matrix=False, show_image=False,
-                 classes = ('Meme', 'No Meme', 'Sticker'), include_text = False, show_metrics = False) -> None:
+                 classes = ('Meme', 'No Meme', 'Sticker'), include_text = False, show_metrics = False, only_text = False) -> None:
         self.model = model
         self.optimizer = optimizer
         self.criterion = criterion
@@ -27,6 +27,7 @@ class Train():
         self.show_matrix = show_matrix
         self.show_image = show_image
         self.show_metrics = show_metrics
+        self.only_text = only_text
 
         self.train_losses = []
         self.test_losses = []
@@ -83,6 +84,11 @@ class Train():
                         text = text.type(torch.int64).to(self.device)
                         self.optimizer.zero_grad()
                         predict = self.model.forward(image, text)
+
+                    elif self.only_text:
+                        text = text.type(torch.int64).to(self.device)
+                        predict = self.model.forward(text)
+
                     else:
                         self.optimizer.zero_grad()
                         predict = self.model.forward(image)
@@ -107,6 +113,10 @@ class Train():
                                 if self.include_text:
                                     text = text.type(torch.int64).to(self.device)
                                     predict = self.model.forward(image, text)
+
+                                elif self.only_text:
+                                    text = text.type(torch.int64).to(self.device)
+                                    predict = self.model.forward(text)
 
                                 else:
                                     predict = self.model.forward(image)

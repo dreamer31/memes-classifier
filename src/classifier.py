@@ -150,7 +150,7 @@ def image_to_text_bert(image_path, reader):
             text += word + " "       
     return text
 
-def process_data_bert(model, init_directory, classes, move=False, show_info = False):
+def process_data_bert(model, init_directory, classes, move=False, show_info = False, include_image = True):
     
     """
     Process all images in a directory
@@ -181,7 +181,11 @@ def process_data_bert(model, init_directory, classes, move=False, show_info = Fa
 
         image_loaded = load_image(str(image))
 
-        predict = model.forward(image_loaded, text_tensor, mask)
+        if include_image:
+            predict = model.forward(image_loaded, text_tensor, mask)
+
+        else:
+            predict = model.forward(text_tensor, mask)
 
         val, ind = predict.squeeze(1).max(1)
         results.append((str(image), ind.item()))

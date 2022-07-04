@@ -29,6 +29,23 @@ categories = {
     25: "Comida",
     26: "Estallido social",
 
-     
+
 
 }
+
+
+categories_new = {0: 'Human content',
+                  1: 'Politics',
+                  2: 'Other',
+                  3: 'Art and Culture',
+                  4: 'Sports',
+                  5: 'Weather',
+                  6: 'Political unrest'}
+
+
+categories_new_rec = {0: 'Human content',
+ 1: 'Politics',
+ 2: 'Other',
+ 3: 'Art and Culture',
+ 4: 'Sports',
+ 5: 'Weather'}

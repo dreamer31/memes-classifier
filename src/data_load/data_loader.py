@@ -65,7 +65,6 @@ class ImageTextData(Dataset):
                                                          df["images"]["texts"],
                                                          df["images"]["targets"])):
 
-            
             targets_name = df["targets_names"][str(target)]
             
             # If target is dudoso, omit
@@ -352,7 +351,6 @@ def generate_batch(batch: tuple) -> tuple:
 
 
 
-    print(torch.stack(text_bert))
     return (
         torch.stack(image_list),
         pad_sequence(text_list, batch_first=True, padding_value=1),

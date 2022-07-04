@@ -10,7 +10,7 @@ from torchvision import transforms
 from src.utils.utils import weights_balanced, make_weights_for_balanced_classes
 from src.tokenizers.tokenizer_category import TokernizerMemeCategory
 from torch.nn.utils.rnn import pad_sequence
-from src.utils.category import categories
+from src.utils.category import categories, categories_new, categories_new_rec
 from transformers import BertTokenizer, PreTrainedTokenizerFast, AutoTokenizer
 from src.data_load.data_augmentation import DataAugmentator
 
@@ -39,7 +39,7 @@ class DataLoaderCategory(Dataset):
         
         self.data = pd.read_csv(self.data_path)
         self.label = []
-        self.tematica = list(self.data["TEMATICA"])
+        self.tematica = list(self.data["TEMA_meme"])
         self.image_links = list(self.data['links'])
         self.text = []
         self.text_bert = []
@@ -47,14 +47,15 @@ class DataLoaderCategory(Dataset):
         self.image = []
         self.tematicas_name = ()
         self.cont_tematica = {}
+        self.categories = categories_new
 
         cont = 0
         aux_tematica = {}
         for tematica in self.tematica:
             if tematica not in aux_tematica:
                 aux_tematica[tematica] = cont
-                self.tematicas_name += (categories[tematica],)
-                self.cont_tematica[categories[tematica]] = 0
+                self.tematicas_name += (self.categories[tematica],)
+                self.cont_tematica[self.categories[tematica]] = 0
                 cont+=1
 
         image_cont = 0
@@ -64,7 +65,7 @@ class DataLoaderCategory(Dataset):
                 image = self.process_image(image_link)
                 text = self.data["text_manual"][image_cont]
                 self.label.append(aux_tematica[self.tematica[image_cont]])
-                self.cont_tematica[categories[self.tematica[image_cont]]] += 1
+                self.cont_tematica[self.categories[self.tematica[image_cont]]] += 1
                 text_process = self.process_text(text)
 
                 if self.BERT:
@@ -73,7 +74,7 @@ class DataLoaderCategory(Dataset):
                 if self.data_augmentation:
 
                     self.process_augmentation(image_link, text,  aux_tematica[self.tematica[image_cont]])
-                    self.cont_tematica[categories[self.tematica[image_cont]]] += 1
+                    self.cont_tematica[self.categories[self.tematica[image_cont]]] += 1
 
             image_cont += 1
         self.text = pad_sequence(self.text,
@@ -132,7 +133,7 @@ class DataLoaderCategory(Dataset):
         encoded = self.bert_tokenizer.encode_plus(
             text=text,
             add_special_tokens=True,
-            max_length = 32,
+            max_length = 16,
             pad_to_max_length = True,             
             return_attention_mask = True,
             return_tensors='pt',
@@ -191,7 +192,7 @@ def load_split_data(datadir: str, test_size: float = 0.2, batch_size: int = 32, 
     train_data, test_data = torch.utils.data.random_split(model_dataset,
                                                          [train_lenght, test_lenght])
 
-    weights_train = make_weights_for_balanced_classes(train_data.dataset.label, train_data.indices, 17)
+    weights_train = make_weights_for_balanced_classes(train_data.dataset.label, train_data.indices, 7)
     weights_train = torch.DoubleTensor(weights_train)
 
 
