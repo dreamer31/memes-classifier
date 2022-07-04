@@ -7,7 +7,7 @@ from PIL import Image
 from torchvision import transforms
 from pathlib import Path
 from transformers import BertTokenizer, PreTrainedTokenizerFast, AutoTokenizer
-
+import os
 
 import numpy as np
 import cv2
@@ -201,12 +201,34 @@ def process_data_bert(model, init_directory, classes, move=False, show_info = Fa
 
     
 import shutil    
+
+def check_directory(directory):
+        
+        """
+        Check if a directory exists
+        
+        :param directory: path of the directory
+        
+        :return: True if the directory exists, False otherwise
+        
+        """
+        
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+
     
 def move_image(path, classify):
         
     meme_path = "./meme-class"
+    check_directory(meme_path)
+
     no_meme_path = "./no-meme-class"
+    check_directory(no_meme_path)
+
     sticker_path = "./sticker-class"
+    check_directory(sticker_path)
+
+    
     
     if classify == 0:
         shutil.move(path, meme_path)
