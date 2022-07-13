@@ -171,10 +171,11 @@ def process_data_bert(model, init_directory, classes, move=False, show_info = Fa
         encoded = bert_tokenizer.encode_plus(
             text=text_image,
             add_special_tokens=True,
-            max_length = 16,
+            max_length = 512,
             padding='max_length',           
             return_attention_mask = True,
             return_tensors='pt',
+            truncation=True
         )
         mask = encoded['attention_mask'].flatten().unsqueeze(0)
         text_tensor = encoded['input_ids'].flatten().unsqueeze(0)
