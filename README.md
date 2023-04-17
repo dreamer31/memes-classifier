@@ -1,5 +1,6 @@
 # Meme Classifier
 
+Reconstrucción del Clasificador y entrenamiento de trabajo de Cristobal Jaramillo, rehecho por Ricardo Aravena.
 Herramienta para clasificar imágenes entre memes, no memes y stickers además de filtrar memes por tópicos. Desarrollada utilizando redes neuronales.
 
 ## Instalación
