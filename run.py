@@ -34,8 +34,8 @@ def load_bert_classifier():
     model_text = BertModel.from_pretrained("bert-base-uncased")
     model_text = BertModelClassification(model_text, 256)
     model_image = CNN(256)
-    model = ModelMixBert(model_image, model_text, 512, 3)
-    model.load_state_dict(torch.load(PATH))
+    model = ModelMixBert(model_image, model_text, 512, 2)
+    model.load_state_dict(torch.load(PATH), strict=False)
     return model
 
 
@@ -85,7 +85,7 @@ if __name__ == "__main__":
 
     print("Cargando modelo..")
     if model_name == "bert" and int(mode_classifier) == 1:
-        classes = ("Meme", "No Meme", "Sticker")
+        classes = ("Meme", "No Meme")
         model = load_bert_classifier()
         include_image = True
 

@@ -25,9 +25,10 @@ def get_files_from_directory(path):
     
     """
     
-    file_path = Path(path)
-    iterator = file_path.iterdir()
-    return iterator
+    files_path = Path(path)
+    files = files_path.glob('*')
+    sorted_files = sorted(files)
+    return sorted_files
 
 
 def recognize_text(img_path, reader):
