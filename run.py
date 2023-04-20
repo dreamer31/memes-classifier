@@ -34,8 +34,8 @@ def load_bert_classifier():
     model_text = BertModel.from_pretrained("bert-base-uncased")
     model_text = BertModelClassification(model_text, 256)
     model_image = CNN(256)
-    model = ModelMixBert(model_image, model_text, 512, 2)
-    model.load_state_dict(torch.load(PATH), strict=False)
+    model = ModelMixBert(model_image, model_text, 512, 3)
+    model.load_state_dict(torch.load(PATH))
     return model
 
 
@@ -66,7 +66,7 @@ def predict(model, move, classes, show_info, include_image):
 
     """
     model.eval()
-    process_data_bert(
+    results = process_data_bert(
         model,
         "./img_class",
         classes,
@@ -74,7 +74,12 @@ def predict(model, move, classes, show_info, include_image):
         show_info=show_info,
         include_image=include_image,
     )
-
+    
+    with open('resultados.csv', 'w') as test_file:
+        test_file.write('ubicacion,esMeme\n')
+        for row in results:
+            test_file.write(str(row[0])+ ','+str(row[1])+'\n')
+    print(results)
 
 if __name__ == "__main__":
 
@@ -85,7 +90,7 @@ if __name__ == "__main__":
 
     print("Cargando modelo..")
     if model_name == "bert" and int(mode_classifier) == 1:
-        classes = ("Meme", "No Meme")
+        classes = ("Meme", "No Meme", "Sticker")
         model = load_bert_classifier()
         include_image = True
 
